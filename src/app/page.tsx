@@ -1,69 +1,163 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import type { TabId, BusinessProfile, Client, Invoice, PS5Console, Controller } from '@/lib/types';
+import { defaultProfile } from '@/lib/constants';
+import { sGet, sSet } from '@/lib/storage';
+import { fmt } from '@/lib/utils';
+
+import TopBar from '@/components/TopBar';
+import Toast from '@/components/Toast';
+import PrintPreview from '@/components/PrintPreview';
+import NewInvoice from '@/components/NewInvoice';
+import InvoiceHistory from '@/components/InvoiceHistory';
+import Clients from '@/components/Clients';
+import Inventory from '@/components/Inventory';
+import Settings from '@/components/Settings';
+
+export default function HomePage() {
+  /* ---- Persisted state ---- */
+  const [loaded, setLoaded] = useState(false);
+  const [profile, _setProfile] = useState<BusinessProfile>(defaultProfile);
+  const [clients, _setClients] = useState<Client[]>([]);
+  const [invoices, _setInvoices] = useState<Invoice[]>([]);
+  const [counter, _setCounter] = useState(0);
+  const [consoles, _setConsoles] = useState<PS5Console[]>([]);
+  const [controllers, _setControllers] = useState<Controller[]>([]);
+
+  /* ---- UI state ---- */
+  const [currentTab, setCurrentTab] = useState<TabId>('new');
+  const [toastMsg, setToastMsg] = useState('');
+  const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ---- Load from localStorage on mount ---- */
+  useEffect(() => {
+    _setProfile(sGet<BusinessProfile>('business-profile', defaultProfile));
+    _setClients(sGet<Client[]>('clients-list', []));
+    _setInvoices(sGet<Invoice[]>('invoices-list', []));
+    _setCounter(sGet<number>('invoice-counter', 0));
+    _setConsoles(sGet<PS5Console[]>('ps5-consoles', []));
+    _setControllers(sGet<Controller[]>('ps5-controllers', []));
+    setLoaded(true);
+  }, []);
+
+  /* ---- Persist wrappers ---- */
+  const setProfile = useCallback((p: BusinessProfile) => { _setProfile(p); sSet('business-profile', p); }, []);
+  const setClients = useCallback((c: Client[]) => { _setClients(c); sSet('clients-list', c); }, []);
+  const setInvoices = useCallback((i: Invoice[]) => { _setInvoices(i); sSet('invoices-list', i); }, []);
+  const setCounter = useCallback((n: number) => { _setCounter(n); sSet('invoice-counter', n); }, []);
+  const setConsoles = useCallback((c: PS5Console[]) => { _setConsoles(c); sSet('ps5-consoles', c); }, []);
+  const setControllers = useCallback((c: Controller[]) => { _setControllers(c); sSet('ps5-controllers', c); }, []);
+
+  /* ---- Toast ---- */
+  const showToast = useCallback((msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastMsg(msg);
+    toastTimer.current = setTimeout(() => setToastMsg(''), 2200);
+  }, []);
+
+  /* ---- Print ---- */
+  const handlePrint = useCallback(
+    (id: string) => {
+      const inv = invoices.find((i) => i.id === id);
+      if (!inv) return;
+      setPrintInvoice(inv);
+      // Small delay to let React render the print area before printing
+      setTimeout(() => {
+        const originalTitle = document.title;
+        document.title = '';
+        window.print();
+        setTimeout(() => {
+          document.title = originalTitle;
+        }, 500);
+      }, 300);
+    },
+    [invoices]
+  );
+
+  /* ---- Invoice saved: switch to history + trigger print ---- */
+  const onInvoiceSaved = useCallback(
+    (invoiceId: string) => {
+      setCurrentTab('history');
+      // We need a slight delay because setInvoices is still propagating
+      setTimeout(() => handlePrint(invoiceId), 400);
+    },
+    [handlePrint]
+  );
+
+  if (!loaded) {
+    return (
+      <div id="app-root" className="max-w-[1100px] mx-auto px-4 py-5 pb-15">
+        <div className="text-center py-12 px-5 text-txt-faint">Loading…</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      <div id="app-root" className="max-w-[1100px] mx-auto px-4 py-5 pb-15">
+        <TopBar
+          profileName={profile.name}
+          currentTab={currentTab}
+          onTabChange={setCurrentTab}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {currentTab === 'new' && (
+          <NewInvoice
+            profile={profile}
+            clients={clients}
+            invoices={invoices}
+            counter={counter}
+            setClients={setClients}
+            setInvoices={setInvoices}
+            setCounter={setCounter}
+            showToast={showToast}
+            onSaved={onInvoiceSaved}
+          />
+        )}
+
+        {currentTab === 'history' && (
+          <InvoiceHistory
+            invoices={invoices}
+            profile={profile}
+            setInvoices={setInvoices}
+            showToast={showToast}
+            onPrint={handlePrint}
+          />
+        )}
+
+        {currentTab === 'clients' && (
+          <Clients
+            clients={clients}
+            invoices={invoices}
+            setClients={setClients}
+            showToast={showToast}
+          />
+        )}
+
+        {currentTab === 'inventory' && (
+          <Inventory
+            consoles={consoles}
+            controllers={controllers}
+            setConsoles={setConsoles}
+            setControllers={setControllers}
+            showToast={showToast}
+          />
+        )}
+
+        {currentTab === 'settings' && (
+          <Settings
+            profile={profile}
+            counter={counter}
+            setProfile={setProfile}
+            showToast={showToast}
+          />
+        )}
+      </div>
+
+      <PrintPreview invoice={printInvoice} profile={profile} />
+      <Toast message={toastMsg} />
+    </>
   );
 }

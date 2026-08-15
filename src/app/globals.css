@@ -1,26 +1,122 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ────────────────────────────────────────────────────────────────
+   AIG Invoice Generator — Theme & Global Styles (Tailwind v4)
+   ──────────────────────────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: #0F1115;
+  --color-surface: #171A21;
+  --color-surface-2: #1F232C;
+  --color-surface-3: #272C37;
+  --color-accent: #C6FF3D;
+  --color-accent-dim: #8FCC1F;
+  --color-cyan: #33E0FF;
+  --color-txt: #F2F4F7;
+  --color-txt-dim: #9AA3B2;
+  --color-txt-faint: #5C6373;
+  --color-bdr: #2A2F3A;
+  --color-danger: #FF6B6B;
+  --color-danger-dim: #4A2323;
+  --color-whatsapp: #25D366;
+  --color-whatsapp-hover: #1FBE5A;
+
+  --font-rajdhani: var(--font-rajdhani-var), sans-serif;
+  --font-inter: var(--font-inter-var), sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ---- Base ---- */
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-txt);
+  font-family: var(--font-inter);
 }
+
+/* ---- Form elements ---- */
+input, select, textarea {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-bdr);
+  color: var(--color-txt);
+  padding: 9px 11px;
+  border-radius: 7px;
+  font-family: var(--font-inter);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-accent-dim);
+}
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* ---- Badge variants ---- */
+.badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-paid { background: #173829; color: #4ADE80; }
+.badge-unpaid { background: #3A1E1E; color: #FF8A8A; }
+.badge-partial { background: #3A3013; color: #FFC94A; }
+.badge-rental { background: #1B2A3E; color: var(--color-cyan); }
+.badge-sale { background: #2A2237; color: #C79FFF; }
+.badge-mixed { background: #2A2237; color: #C79FFF; }
+
+/* ---- Chip variants ---- */
+.chip-primary { background: #1B2A3E; color: var(--color-cyan); }
+.chip-secondary { background: #2A2237; color: #C79FFF; }
+
+/* ---- PS toggle ---- */
+.ps-toggle { display: flex; border: 1px solid var(--color-bdr); border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+.ps-toggle button {
+  background: var(--color-surface-2); border: none; color: var(--color-txt-dim);
+  width: 30px; height: 34px; font-family: var(--font-rajdhani); font-weight: 700;
+  cursor: pointer; font-size: 13px;
+}
+.ps-toggle button.active { background: var(--color-accent); color: #0F1115; }
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--color-surface-3); border: 1px solid var(--color-accent-dim);
+  color: var(--color-accent); padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; z-index: 999;
+  opacity: 0; transition: opacity 0.25s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* ──────────────────────────── Print Styles ──────────────────────────── */
+#printArea { display: none; }
+
+@media print {
+  body { margin: 0; }
+  #app-root, .toast, .no-print { display: none !important; }
+  #printArea {
+    display: block !important; position: static; width: 100%;
+    padding: 20px; background: #fff; color: #111; font-family: 'Inter', sans-serif;
+  }
+}
+@page { margin: 12mm; }
+
+.pi-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 16px;
+}
+.pi-biz h1 { font-size: 22px; color: #111; margin: 0; }
+.pi-biz p { margin: 2px 0; font-size: 12px; color: #444; }
+.pi-meta { text-align: right; }
+.pi-meta h2 { font-size: 18px; color: #111; margin: 0; }
+.pi-meta p { margin: 2px 0; font-size: 12px; color: #444; }
+.pi-section { margin-bottom: 16px; }
+.pi-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin: 0 0 6px; }
+.pi-section p { margin: 1px 0; font-size: 13px; color: #111; }
+#printArea table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+#printArea th { background: #111; color: #fff; font-size: 11px; text-transform: uppercase; padding: 8px; text-align: left; }
+#printArea td { padding: 8px; border-bottom: 1px solid #ddd; font-size: 13px; color: #111; }
+#printArea .pi-totals { margin-left: auto; max-width: 280px; margin-top: 10px; }
+#printArea .pi-totals-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: #333; }
+#printArea .pi-totals-row.grand { font-size: 18px; font-weight: 700; border-top: 2px solid #111; margin-top: 6px; padding-top: 8px; color: #111; }
+#printArea .pi-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #777; }
