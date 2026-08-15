@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import type { Invoice, BusinessProfile } from '@/lib/types';
 import { fmt, normalizeWhatsAppNumber, buildWhatsAppMessage } from '@/lib/utils';
+import * as db from '@/lib/db';
 
 interface InvoiceHistoryProps {
   invoices: Invoice[];
@@ -32,6 +33,7 @@ export default function InvoiceHistory({
 
   const deleteInvoice = (id: string) => {
     setInvoices(invoices.filter((i) => i.id !== id));
+    db.deleteInvoice(id);
     showToast('Invoice deleted');
   };
 

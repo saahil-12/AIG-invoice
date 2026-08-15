@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import type { PS5Console, Game, ConsoleDraft, ServiceDraft, GameDraft } from '@/lib/types';
 import { uid, todayStr, fmt } from '@/lib/utils';
 import ServiceHistory from './ServiceHistory';
+import * as db from '@/lib/db';
 
 interface ConsoleSectionProps {
   consoles: PS5Console[];
@@ -80,6 +81,7 @@ export default function ConsoleSection({ consoles, setConsoles, showToast }: Con
       createdAt: new Date().toISOString(),
     };
     setConsoles([...consoles, newConsole]);
+    db.saveConsole(newConsole);
     showToast('Console saved');
     resetDraft();
   };
@@ -87,6 +89,7 @@ export default function ConsoleSection({ consoles, setConsoles, showToast }: Con
   /* ---- Delete console ---- */
   const deleteConsole = (id: string) => {
     setConsoles(consoles.filter((c) => c.id !== id));
+    db.deleteConsole(id);
     showToast('Console removed');
   };
 
@@ -100,13 +103,15 @@ export default function ConsoleSection({ consoles, setConsoles, showToast }: Con
       showToast('Enter a game name');
       return;
     }
-    setConsoles(
-      consoles.map((c) =>
-        c.id === consoleId
-          ? { ...c, games: [...c.games, { id: uid(), name: gd.name.trim(), owner: gd.owner }] }
-          : c
-      )
+    const updatedConsoles = consoles.map((c) =>
+      c.id === consoleId
+        ? { ...c, games: [...c.games, { id: uid(), name: gd.name.trim(), owner: gd.owner }] }
+        : c
     );
+    setConsoles(updatedConsoles);
+    const updatedConsole = updatedConsoles.find((c) => c.id === consoleId);
+    if (updatedConsole) db.saveConsole(updatedConsole);
+
     setGameDrafts((prev) => {
       const next = { ...prev };
       delete next[consoleId];
@@ -115,11 +120,12 @@ export default function ConsoleSection({ consoles, setConsoles, showToast }: Con
   };
 
   const removeGameFromConsole = (consoleId: string, gameId: string) => {
-    setConsoles(
-      consoles.map((c) =>
-        c.id === consoleId ? { ...c, games: c.games.filter((g) => g.id !== gameId) } : c
-      )
+    const updatedConsoles = consoles.map((c) =>
+      c.id === consoleId ? { ...c, games: c.games.filter((g) => g.id !== gameId) } : c
     );
+    setConsoles(updatedConsoles);
+    const updatedConsole = updatedConsoles.find((c) => c.id === consoleId);
+    if (updatedConsole) db.saveConsole(updatedConsole);
   };
 
   /* ---- Service history ---- */
@@ -136,19 +142,21 @@ export default function ConsoleSection({ consoles, setConsoles, showToast }: Con
       showToast('Add a vendor or complaint before saving');
       return;
     }
-    setConsoles(
-      consoles.map((c) =>
-        c.id === itemId
-          ? {
-              ...c,
-              services: [
-                ...c.services,
-                { id: uid(), date: sd.date, vendor: sd.vendor.trim(), amount: Number(sd.amount) || 0, complaint: sd.complaint.trim() },
-              ],
-            }
-          : c
-      )
+    const updatedConsoles = consoles.map((c) =>
+      c.id === itemId
+        ? {
+            ...c,
+            services: [
+              ...c.services,
+              { id: uid(), date: sd.date, vendor: sd.vendor.trim(), amount: Number(sd.amount) || 0, complaint: sd.complaint.trim() },
+            ],
+          }
+        : c
     );
+    setConsoles(updatedConsoles);
+    const updatedConsole = updatedConsoles.find((c) => c.id === itemId);
+    if (updatedConsole) db.saveConsole(updatedConsole);
+
     setServiceDrafts((prev) => {
       const next = { ...prev };
       delete next[itemId];
@@ -159,11 +167,12 @@ export default function ConsoleSection({ consoles, setConsoles, showToast }: Con
   };
 
   const deleteServiceRecord = (itemId: string, serviceId: string) => {
-    setConsoles(
-      consoles.map((c) =>
-        c.id === itemId ? { ...c, services: c.services.filter((s) => s.id !== serviceId) } : c
-      )
+    const updatedConsoles = consoles.map((c) =>
+      c.id === itemId ? { ...c, services: c.services.filter((s) => s.id !== serviceId) } : c
     );
+    setConsoles(updatedConsoles);
+    const updatedConsole = updatedConsoles.find((c) => c.id === itemId);
+    if (updatedConsole) db.saveConsole(updatedConsole);
     showToast('Service record removed');
   };
 

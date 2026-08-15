@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import type { Client, Invoice } from '@/lib/types';
 import { uid, fmt } from '@/lib/utils';
+import * as db from '@/lib/db';
 
 interface ClientsProps {
   clients: Client[];
@@ -20,7 +21,9 @@ export default function Clients({ clients, invoices, setClients, showToast }: Cl
       showToast('Enter a client name');
       return;
     }
-    setClients([...clients, { id: uid(), name: name.trim(), phone: phone.trim(), address: '' }]);
+    const newClient = { id: uid(), name: name.trim(), phone: phone.trim(), address: '' };
+    setClients([...clients, newClient]);
+    db.saveClient(newClient);
     showToast('Client added');
     setName('');
     setPhone('');
@@ -28,6 +31,7 @@ export default function Clients({ clients, invoices, setClients, showToast }: Cl
 
   const deleteClient = (id: string) => {
     setClients(clients.filter((c) => c.id !== id));
+    db.deleteClient(id);
     showToast('Client removed');
   };
 

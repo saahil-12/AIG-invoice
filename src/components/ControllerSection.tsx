@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import type { Controller, ServiceDraft } from '@/lib/types';
 import { uid, todayStr } from '@/lib/utils';
 import ServiceHistory from './ServiceHistory';
+import * as db from '@/lib/db';
 
 interface ControllerSectionProps {
   controllers: Controller[];
@@ -42,12 +43,14 @@ export default function ControllerSection({ controllers, setControllers, showToa
       createdAt: new Date().toISOString(),
     };
     setControllers([...controllers, newCtrl]);
+    db.saveController(newCtrl);
     showToast('Controller saved');
     resetDraft();
   };
 
   const deleteController = (id: string) => {
     setControllers(controllers.filter((c) => c.id !== id));
+    db.deleteController(id);
     showToast('Controller removed');
   };
 
@@ -65,19 +68,21 @@ export default function ControllerSection({ controllers, setControllers, showToa
       showToast('Add a vendor or complaint before saving');
       return;
     }
-    setControllers(
-      controllers.map((c) =>
-        c.id === itemId
-          ? {
-              ...c,
-              services: [
-                ...c.services,
-                { id: uid(), date: sd.date, vendor: sd.vendor.trim(), amount: Number(sd.amount) || 0, complaint: sd.complaint.trim() },
-              ],
-            }
-          : c
-      )
+    const updatedControllers = controllers.map((c) =>
+      c.id === itemId
+        ? {
+            ...c,
+            services: [
+              ...c.services,
+              { id: uid(), date: sd.date, vendor: sd.vendor.trim(), amount: Number(sd.amount) || 0, complaint: sd.complaint.trim() },
+            ],
+          }
+        : c
     );
+    setControllers(updatedControllers);
+    const updatedController = updatedControllers.find((c) => c.id === itemId);
+    if (updatedController) db.saveController(updatedController);
+
     setServiceDrafts((prev) => {
       const next = { ...prev };
       delete next[itemId];
@@ -88,11 +93,12 @@ export default function ControllerSection({ controllers, setControllers, showToa
   };
 
   const deleteServiceRecord = (itemId: string, serviceId: string) => {
-    setControllers(
-      controllers.map((c) =>
-        c.id === itemId ? { ...c, services: c.services.filter((s) => s.id !== serviceId) } : c
-      )
+    const updatedControllers = controllers.map((c) =>
+      c.id === itemId ? { ...c, services: c.services.filter((s) => s.id !== serviceId) } : c
     );
+    setControllers(updatedControllers);
+    const updatedController = updatedControllers.find((c) => c.id === itemId);
+    if (updatedController) db.saveController(updatedController);
     showToast('Service record removed');
   };
 

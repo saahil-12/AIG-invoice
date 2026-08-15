@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { TabId, BusinessProfile, Client, Invoice, PS5Console, Controller } from '@/lib/types';
 import { defaultProfile } from '@/lib/constants';
-import { sGet, sSet } from '@/lib/storage';
+import * as db from '@/lib/db';
 import { fmt } from '@/lib/utils';
 
 import TopBar from '@/components/TopBar';
@@ -31,24 +31,35 @@ export default function HomePage() {
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ---- Load from localStorage on mount ---- */
+  /* ---- Load from Supabase on mount ---- */
   useEffect(() => {
-    _setProfile(sGet<BusinessProfile>('business-profile', defaultProfile));
-    _setClients(sGet<Client[]>('clients-list', []));
-    _setInvoices(sGet<Invoice[]>('invoices-list', []));
-    _setCounter(sGet<number>('invoice-counter', 0));
-    _setConsoles(sGet<PS5Console[]>('ps5-consoles', []));
-    _setControllers(sGet<Controller[]>('ps5-controllers', []));
-    setLoaded(true);
+    async function loadData() {
+      const [p, c, i, cnt, ps5, ctrl] = await Promise.all([
+        db.loadProfile(),
+        db.loadClients(),
+        db.loadInvoices(),
+        db.loadCounter(),
+        db.loadConsoles(),
+        db.loadControllers(),
+      ]);
+      _setProfile(p);
+      _setClients(c);
+      _setInvoices(i);
+      _setCounter(cnt);
+      _setConsoles(ps5);
+      _setControllers(ctrl);
+      setLoaded(true);
+    }
+    loadData();
   }, []);
 
   /* ---- Persist wrappers ---- */
-  const setProfile = useCallback((p: BusinessProfile) => { _setProfile(p); sSet('business-profile', p); }, []);
-  const setClients = useCallback((c: Client[]) => { _setClients(c); sSet('clients-list', c); }, []);
-  const setInvoices = useCallback((i: Invoice[]) => { _setInvoices(i); sSet('invoices-list', i); }, []);
-  const setCounter = useCallback((n: number) => { _setCounter(n); sSet('invoice-counter', n); }, []);
-  const setConsoles = useCallback((c: PS5Console[]) => { _setConsoles(c); sSet('ps5-consoles', c); }, []);
-  const setControllers = useCallback((c: Controller[]) => { _setControllers(c); sSet('ps5-controllers', c); }, []);
+  const setProfile = useCallback((p: BusinessProfile) => { _setProfile(p); db.saveProfile(p); }, []);
+  const setClients = useCallback((c: Client[]) => { _setClients(c); /* Note: granular save handled in Clients.tsx to avoid saving whole array */ }, []);
+  const setInvoices = useCallback((i: Invoice[]) => { _setInvoices(i); /* Note: granular save handled in components */ }, []);
+  const setCounter = useCallback((n: number) => { _setCounter(n); db.saveCounter(n); }, []);
+  const setConsoles = useCallback((c: PS5Console[]) => { _setConsoles(c); /* Granular saves in ConsoleSection.tsx */ }, []);
+  const setControllers = useCallback((c: Controller[]) => { _setControllers(c); /* Granular saves in ControllerSection.tsx */ }, []);
 
   /* ---- Toast ---- */
   const showToast = useCallback((msg: string) => {

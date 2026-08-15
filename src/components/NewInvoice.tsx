@@ -23,6 +23,7 @@ import {
   getEquipmentPrice,
   splitHintText,
 } from '@/lib/utils';
+import * as db from '@/lib/db';
 
 interface NewInvoiceProps {
   profile: BusinessProfile;
@@ -194,13 +195,15 @@ export default function NewInvoice({
         clientId = existing.id;
       } else {
         clientId = uid();
-        updatedClients.push({
+        const newClient = {
           id: clientId,
           name: draft.clientName.trim(),
           phone: draft.clientPhone.trim(),
           address: '',
-        });
+        };
+        updatedClients.push(newClient);
         setClients(updatedClients);
+        db.saveClient(newClient);
       }
     }
 
@@ -246,6 +249,7 @@ export default function NewInvoice({
     };
 
     setInvoices([invoice, ...invoices]);
+    db.saveInvoice(invoice);
     showToast('Invoice ' + number + ' saved');
     // Reset the form
     setDraft({
